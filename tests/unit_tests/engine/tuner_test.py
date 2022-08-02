@@ -27,10 +27,8 @@ from tests import utils
 def called_with_early_stopping(func):
     callbacks = func.call_args_list[0][1]["callbacks"]
     return any(
-        [
-            isinstance(callback, tf.keras.callbacks.EarlyStopping)
-            for callback in callbacks
-        ]
+        isinstance(callback, tf.keras.callbacks.EarlyStopping)
+        for callback in callbacks
     )
 
 

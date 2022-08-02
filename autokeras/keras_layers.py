@@ -69,7 +69,7 @@ class MultiCategoryEncoding(preprocessing.PreprocessingLayer):
         self.encoding = encoding
         self.encoding_layers = []
         for encoding in self.encoding:
-            if encoding == NONE:
+            if encoding == NONE or encoding != INT and encoding == ONE_HOT:
                 self.encoding_layers.append(None)
             elif encoding == INT:
                 # Set a temporary vocabulary to prevent the error of no
@@ -78,8 +78,6 @@ class MultiCategoryEncoding(preprocessing.PreprocessingLayer):
                 self.encoding_layers.append(
                     preprocessing.StringLookup(vocabulary=["NONE"])
                 )
-            elif encoding == ONE_HOT:
-                self.encoding_layers.append(None)
 
     def build(self, input_shape):
         for encoding_layer in self.encoding_layers:
@@ -171,15 +169,13 @@ class BertTokenizer(preprocessing.PreprocessingLayer):
         """
         tokens = list(self.tokenizer.tokenize(s))
         tokens.append("[SEP]")
-        encoded_sentence = self.tokenizer.convert_tokens_to_ids(tokens)
-        return encoded_sentence
+        return self.tokenizer.convert_tokens_to_ids(tokens)
 
     def get_encoded_sentence(self, input_tensor):
         input_array = np.array(input_tensor, dtype=object)
-        sentence = tf.ragged.constant(
+        return tf.ragged.constant(
             [self.encode_sentence(s[0]) for s in input_array]
         )
-        return sentence
 
     def bert_encode(self, input_tensor):
         sentence = self.get_encoded_sentence(input_tensor)
@@ -277,9 +273,7 @@ class BertEncoder(tf.keras.layers.Layer):
 
         first_token_tensor = self._lambda(encoder_outputs[-1])
 
-        cls_output = self._pooler_layer(first_token_tensor)
-
-        return cls_output
+        return self._pooler_layer(first_token_tensor)
 
     def load_pretrained_weights(self):
         path = tf.keras.utils.get_file(
@@ -325,8 +319,7 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
         )
 
     def _decay_weights_op(self, var, learning_rate, apply_state):
-        do_decay = self._do_use_weight_decay(var.name)
-        if do_decay:
+        if do_decay := self._do_use_weight_decay(var.name):
             return var.assign_sub(
                 learning_rate
                 * var
@@ -618,11 +611,7 @@ def get_shape_list(tensor, expected_rank=None, name=None):
 
     shape = tensor.shape.as_list()  # pragma: no cover
 
-    non_static_indexes = []  # pragma: no cover
-    for (index, dim) in enumerate(shape):  # pragma: no cover
-        if dim is None:  # pragma: no cover
-            non_static_indexes.append(index)  # pragma: no cover
-
+    non_static_indexes = [index for index, dim in enumerate(shape) if dim is None]
     if not non_static_indexes:  # pragma: no cover
         return shape  # pragma: no cover
 
@@ -680,10 +669,7 @@ class SelfAttentionMask(tf.keras.layers.Layer):
             shape=[batch_size, from_seq_length, 1], dtype=from_tensor.dtype
         )
 
-        # Here we broadcast along two dimensions to create the mask.
-        mask = broadcast_ones * to_mask  # pragma: no cover
-
-        return mask  # pragma: no cover
+        return broadcast_ones * to_mask
 
 
 @tf.keras.utils.register_keras_serializable()
@@ -926,7 +912,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         super(MultiHeadAttention, self).__init__(**kwargs)
         self._num_heads = num_heads
         self._key_size = key_size
-        self._value_size = value_size if value_size else key_size
+        self._value_size = value_size or key_size
         self._dropout = dropout
         self._use_bias = use_bias
         self._output_shape = output_shape
@@ -1043,12 +1029,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         # support mult-head einsum computations.
         self._build_attention(output_rank)
         if self._output_shape:
-            if not isinstance(
-                self._output_shape, collections.abc.Sized
-            ):  # pragma: no cover
-                output_shape = [self._output_shape]  # pragma: no cover
-            else:
-                output_shape = self._output_shape  # pragma: no cover
+            output_shape = (
+                self._output_shape
+                if isinstance(self._output_shape, collections.abc.Sized)
+                else [self._output_shape]
+            )
+
         else:
             output_shape = [query_shape[-1]]
         einsum_equation, bias_axes, output_rank = _build_proj_equation(
@@ -1258,7 +1244,7 @@ class DenseEinsum(tf.keras.layers.Layer):
             kernel_str += char
             output_str += char
 
-        return input_str + "," + kernel_str + "->" + output_str
+        return f"{input_str},{kernel_str}->{output_str}"
 
     def build(self, input_shape):
         input_shape = tf.TensorShape(input_shape)
@@ -1365,7 +1351,7 @@ def _build_proj_equation(free_dims, bound_dims, output_dims):
         kernel_str += char
         output_str += char
         bias_axes += char
-    equation = "%s,%s->%s" % (input_str, kernel_str, output_str)
+    equation = f"{input_str},{kernel_str}->{output_str}"
 
     return equation, bias_axes, len(output_str)
 
@@ -1417,17 +1403,12 @@ def _build_attention_equation(qkv_rank, attn_axes):
         + [target_notation[i] for i in attn_axes]
         + [source_notation[i] for i in attn_axes]
     )
-    dot_product_equation = "%s,%s->%s" % (
-        source_notation,
-        target_notation,
-        product_notation,
+    dot_product_equation = (
+        f"{source_notation},{target_notation}->{product_notation}"
     )
+
     attn_scores_rank = len(product_notation)
-    combine_equation = "%s,%s->%s" % (
-        product_notation,
-        source_notation,
-        target_notation,
-    )
+    combine_equation = f"{product_notation},{source_notation}->{target_notation}"
     return dot_product_equation, combine_equation, attn_scores_rank
 
 
@@ -1489,10 +1470,7 @@ class MaskedSoftmax(tf.keras.layers.Layer):
 
 def convert_by_vocab(vocab, items):
     """Converts a sequence of [tokens|ids] using the vocab."""
-    output = []
-    for item in items:
-        output.append(vocab[item])
-    return output
+    return [vocab[item] for item in items]
 
 
 def convert_to_unicode(text):
@@ -1503,9 +1481,7 @@ def convert_to_unicode(text):
         elif isinstance(text, bytes):
             return text.decode("utf-8", "ignore")
         else:
-            raise ValueError(
-                "Unsupported string type: %s" % (type(text))
-            )  # pragma: no cover
+            raise ValueError(f"Unsupported string type: {type(text)}")
 
 
 def load_vocab(vocab_file):
@@ -1538,9 +1514,7 @@ class FullTokenizer(object):
     def tokenize(self, text):
         split_tokens = []
         for token in self.basic_tokenizer.tokenize(text):
-            for sub_token in self.wordpiece_tokenizer.tokenize(token):
-                split_tokens.append(sub_token)
-
+            split_tokens.extend(iter(self.wordpiece_tokenizer.tokenize(token)))
         return split_tokens
 
     def convert_tokens_to_ids(self, tokens):
@@ -1589,8 +1563,7 @@ class BasicTokenizer(object):
             else:
                 split_tokens.append(token)  # pragma: no cover
 
-        output_tokens = whitespace_tokenize(" ".join(split_tokens))
-        return output_tokens
+        return whitespace_tokenize(" ".join(split_tokens))
 
     def _run_strip_accents(self, text):
         """Strips accents from a piece of text."""
@@ -1629,9 +1602,7 @@ class BasicTokenizer(object):
         for char in text:
             cp = ord(char)
             if self._is_chinese_char(cp):
-                output.append(" ")  # pragma: no cover
-                output.append(char)  # pragma: no cover
-                output.append(" ")  # pragma: no cover
+                output.extend((" ", char, " "))
             else:
                 output.append(char)
         return "".join(output)
@@ -1646,19 +1617,16 @@ class BasicTokenizer(object):
         # as is Japanese Hiragana and Katakana. Those alphabets are used to write
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
-        if (
+        return (
             (cp >= 0x4E00 and cp <= 0x9FFF)
-            or (cp >= 0x3400 and cp <= 0x4DBF)  #
-            or (cp >= 0x20000 and cp <= 0x2A6DF)  #
-            or (cp >= 0x2A700 and cp <= 0x2B73F)  #
-            or (cp >= 0x2B740 and cp <= 0x2B81F)  #
-            or (cp >= 0x2B820 and cp <= 0x2CEAF)  #
+            or (cp >= 0x3400 and cp <= 0x4DBF)
+            or (cp >= 0x20000 and cp <= 0x2A6DF)
+            or (cp >= 0x2A700 and cp <= 0x2B73F)
+            or (cp >= 0x2B740 and cp <= 0x2B81F)
+            or (cp >= 0x2B820 and cp <= 0x2CEAF)
             or (cp >= 0xF900 and cp <= 0xFAFF)
-            or (cp >= 0x2F800 and cp <= 0x2FA1F)  #
-        ):  #
-            return True  # pragma: no cover
-
-        return False
+            or (cp >= 0x2F800 and cp <= 0x2FA1F)
+        )
 
     def _clean_text(self, text):
         """Performs invalid character removal and whitespace cleanup on text."""
@@ -1718,7 +1686,7 @@ class WordpieceTokenizer(object):
                 while start < end:
                     substr = "".join(chars[start:end])
                     if start > 0:
-                        substr = "##" + substr  # pragma: no cover
+                        substr = f"##{substr}"
                     if substr in self.vocab:
                         cur_substr = substr
                         break
@@ -1740,33 +1708,26 @@ def _is_control(char):
     """Checks whether `chars` is a control character."""
     # These are technically control characters but we count them as whitespace
     # characters.
-    if char == "\t" or char == "\n" or char == "\r":
+    if char in ["\t", "\n", "\r"]:
         return False  # pragma: no cover
     cat = unicodedata.category(char)
-    if cat in ("Cc", "Cf"):
-        return True  # pragma: no cover
-    return False
+    return cat in ("Cc", "Cf")
 
 
 def _is_whitespace(char):
     """Checks whether `chars` is a whitespace character."""
     # \t, \n, and \r are technically control characters but we treat them
     # as whitespace since they are generally considered as such.
-    if char == " " or char == "\t" or char == "\n" or char == "\r":
+    if char in [" ", "\t", "\n", "\r"]:
         return True
     cat = unicodedata.category(char)
-    if cat == "Zs":
-        return True  # pragma: no cover
-    return False
+    return cat == "Zs"
 
 
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
-    if not text:
-        return []
-    tokens = text.split()
-    return tokens
+    return text.split() if text else []
 
 
 def _is_punctuation(char):
@@ -1784,6 +1745,4 @@ def _is_punctuation(char):
     ):
         return True
     cat = unicodedata.category(char)
-    if cat.startswith("P"):
-        return True  # pragma: no cover
-    return False
+    return bool(cat.startswith("P"))

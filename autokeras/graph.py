@@ -100,10 +100,8 @@ class Graph(keras_tuner.HyperModel, serializable.Serializable):
             for block in input_node.out_blocks:
                 if (
                     any(
-                        [
-                            output_node in self._node_to_id
-                            for output_node in block.outputs
-                        ]
+                        output_node in self._node_to_id
+                        for output_node in block.outputs
                     )
                     and block not in blocks
                 ):
@@ -128,14 +126,15 @@ class Graph(keras_tuner.HyperModel, serializable.Serializable):
         # Add the blocks in topological order.
         self.blocks = []
         self._block_to_id = {}
-        while len(blocks) != 0:
-            new_added = []
+        while blocks:
+            new_added = [
+                block
+                for block in blocks
+                if not any(
+                    in_degree[self._node_to_id[node]] for node in block.inputs
+                )
+            ]
 
-            # Collect blocks with in degree 0.
-            for block in blocks:
-                if any([in_degree[self._node_to_id[node]] for node in block.inputs]):
-                    continue
-                new_added.append(block)
 
             # Remove the collected blocks from blocks.
             for block in new_added:

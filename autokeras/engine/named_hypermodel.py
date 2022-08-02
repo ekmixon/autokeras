@@ -30,7 +30,7 @@ class NamedHyperModel(keras_tuner.HyperModel, serializable.Serializable):
     def __init__(self, name: str = None, **kwargs):
         if not name:
             prefix = self.__class__.__name__
-            name = prefix + "_" + str(tf.keras.backend.get_uid(prefix))
+            name = f"{prefix}_{str(tf.keras.backend.get_uid(prefix))}"
             name = utils.to_snake_case(name)
         super().__init__(name=name, **kwargs)
 

@@ -124,10 +124,10 @@ x = loadmat("imdb/imdb.mat")
 mdata = x["imdb"]  # variable in mat file
 mdtype = mdata.dtype  # dtypes of structures are "unsized objects"
 ndata = {n: mdata[n][0, 0] for n in mdtype.names}
-columns = [n for n, v in ndata.items()]
+columns = list(ndata)
 
 rows = []
-for col in range(0, 10):
+for col in range(10):
     values = list(ndata.items())[col]
     for num, val in enumerate(values[1][0], start=0):
         if col == 0:
@@ -142,7 +142,7 @@ for col in range(0, 10):
 
 dt = map(lambda row: np.array(row), np.array(rows[1:]))
 
-df = pd.DataFrame(data=dt, index=range(0, len(rows) - 1), columns=columns)
+df = pd.DataFrame(data=dt, index=range(len(rows) - 1), columns=columns)
 print(df.head())
 
 print(columns)

@@ -156,7 +156,7 @@ def test_structured_block_search_normalize_return_tensor():
     block.column_names = ["0", "1"]
     block.column_types = {"0": analysers.NUMERICAL, "1": analysers.NUMERICAL}
     hp = keras_tuner.HyperParameters()
-    hp.values["a/" + blocks.wrapper.NORMALIZE] = True
+    hp.values[f"a/{blocks.wrapper.NORMALIZE}"] = True
 
     outputs = block.build(hp, tf.keras.Input(shape=(2,), dtype=tf.string))
 

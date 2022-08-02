@@ -40,15 +40,11 @@ def deserialize_metrics(metrics):
 
 
 def serialize_loss(loss):
-    if isinstance(loss, str):
-        return [loss]
-    return tf.keras.losses.serialize(loss)
+    return [loss] if isinstance(loss, str) else tf.keras.losses.serialize(loss)
 
 
 def deserialize_loss(loss):
-    if isinstance(loss, list):
-        return loss[0]
-    return tf.keras.losses.deserialize(loss)
+    return loss[0] if isinstance(loss, list) else tf.keras.losses.deserialize(loss)
 
 
 class Head(io_hypermodel.IOHyperModel):

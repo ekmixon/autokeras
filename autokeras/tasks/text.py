@@ -157,7 +157,7 @@ class TextClassifier(SupervisedTextPipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -166,7 +166,6 @@ class TextClassifier(SupervisedTextPipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
 
 class TextRegressor(SupervisedTextPipeline):
@@ -289,7 +288,7 @@ class TextRegressor(SupervisedTextPipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -298,4 +297,3 @@ class TextRegressor(SupervisedTextPipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history

@@ -119,8 +119,8 @@ def py_to_nb_md(dest_dir):
         if ext != ".py":
             continue
 
-        nb_path = os.path.join("ipynb", file_name_no_ext + ".ipynb")
-        md_path = os.path.join(dest_dir, "tutorial", file_name_no_ext + ".md")
+        nb_path = os.path.join("ipynb", f"{file_name_no_ext}.ipynb")
+        md_path = os.path.join(dest_dir, "tutorial", f"{file_name_no_ext}.md")
 
         tutobooks.py_to_md(py_path, nb_path, md_path, "templates/img")
 

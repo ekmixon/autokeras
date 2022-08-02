@@ -23,9 +23,7 @@ def batched(dataset):
 
 
 def batch_dataset(dataset, batch_size):
-    if batched(dataset):
-        return dataset
-    return dataset.batch(batch_size)
+    return dataset if batched(dataset) else dataset.batch(batch_size)
 
 
 def split_dataset(dataset, validation_split):
@@ -69,9 +67,7 @@ def unzip_dataset(dataset):
 
 
 def cast_to_string(tensor):
-    if tensor.dtype == tf.string:
-        return tensor
-    return tf.strings.as_string(tensor)
+    return tensor if tensor.dtype == tf.string else tf.strings.as_string(tensor)
 
 
 def cast_to_float32(tensor):

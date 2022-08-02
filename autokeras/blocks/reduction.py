@@ -29,11 +29,7 @@ GLOBAL_AVG = "global_avg"
 
 
 def shape_compatible(shape1, shape2):
-    if len(shape1) != len(shape2):
-        return False
-    # TODO: If they can be the same after passing through any layer,
-    #  they are compatible. e.g. (32, 32, 3), (16, 16, 2) are compatible
-    return shape1[:-1] == shape2[:-1]
+    return False if len(shape1) != len(shape2) else shape1[:-1] == shape2[:-1]
 
 
 class Merge(block_module.Block):
@@ -59,10 +55,8 @@ class Merge(block_module.Block):
             return inputs
 
         if not all(
-            [
-                shape_compatible(input_node.shape, inputs[0].shape)
-                for input_node in inputs
-            ]
+            shape_compatible(input_node.shape, inputs[0].shape)
+            for input_node in inputs
         ):
             inputs = [Flatten().build(hp, input_node) for input_node in inputs]
 

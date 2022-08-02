@@ -45,7 +45,7 @@ def test_greedy_oracle_populate_different_values(get_best_trials):
     values_a = oracle.populate_space("a")["values"]
     values_b = oracle.populate_space("b")["values"]
 
-    assert not all([values_a[key] == values_b[key] for key in values_a])
+    assert any(values_a[key] != values_b[key] for key in values_a)
 
 
 @mock.patch("autokeras.tuners.greedy.GreedyOracle.get_best_trials")
@@ -71,7 +71,7 @@ def test_greedy_oracle_populate_doesnt_crash_with_init_hps(get_best_trials):
     trial.hyperparameters = hp
     get_best_trials.return_value = [trial]
 
-    for i in range(10):
+    for _ in range(10):
         tf.keras.backend.clear_session()
         values = oracle.populate_space("a")["values"]
         hp = oracle.hyperparameters.copy()

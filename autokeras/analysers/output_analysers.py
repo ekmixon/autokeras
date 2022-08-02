@@ -46,14 +46,15 @@ class ClassificationAnalyser(TargetAnalyser):
         # TODO: support raw string labels for multi-label.
         self.labels = sorted(list(self.labels))
 
-        # Infer the num_classes if not specified.
         if not self.num_classes:
             if self.encoded:
                 # Single column with 0s and 1s.
-                if len(self.shape) == 1 or self.shape[1:] == [1]:
-                    self.num_classes = 2
-                else:
-                    self.num_classes = self.shape[1]
+                self.num_classes = (
+                    2
+                    if len(self.shape) == 1 or self.shape[1:] == [1]
+                    else self.shape[1]
+                )
+
             else:
                 self.num_classes = len(self.labels)
 
@@ -90,9 +91,7 @@ class ClassificationAnalyser(TargetAnalyser):
 
     @property
     def encoded_for_sigmoid(self):
-        if len(self.labels) != 2:
-            return False
-        return sorted(self.labels) == [0, 1]
+        return False if len(self.labels) != 2 else sorted(self.labels) == [0, 1]
 
     @property
     def encoded_for_softmax(self):
@@ -115,6 +114,4 @@ class RegressionAnalyser(TargetAnalyser):
             )
 
     def expected_dim(self):
-        if len(self.shape) == 1:
-            return 1
-        return self.shape[1]
+        return 1 if len(self.shape) == 1 else self.shape[1]

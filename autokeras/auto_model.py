@@ -189,10 +189,9 @@ class AutoModel(object):
 
     def _build_graph(self):
         # Using functional API.
-        if all([isinstance(output, node_module.Node) for output in self.outputs]):
+        if all(isinstance(output, node_module.Node) for output in self.outputs):
             graph = graph_module.Graph(inputs=self.inputs, outputs=self.outputs)
-        # Using input/output API.
-        elif all([isinstance(output, head_module.Head) for output in self.outputs]):
+        elif all(isinstance(output, head_module.Head) for output in self.outputs):
             graph = self._assemble()
             self.outputs = graph.outputs
 
@@ -281,7 +280,7 @@ class AutoModel(object):
                 dataset, validation_split
             )
 
-        history = self.tuner.search(
+        return self.tuner.search(
             x=dataset,
             epochs=epochs,
             callbacks=callbacks,
@@ -290,8 +289,6 @@ class AutoModel(object):
             verbose=verbose,
             **kwargs
         )
-
-        return history
 
     def _adapt(self, dataset, hms, batch_size):
         if isinstance(dataset, tf.data.Dataset):
@@ -302,9 +299,7 @@ class AutoModel(object):
         for source, hm in zip(sources, hms):
             source = hm.get_adapter().adapt(source, batch_size)
             adapted.append(source)
-        if len(adapted) == 1:
-            return adapted[0]
-        return tf.data.Dataset.zip(tuple(adapted))
+        return adapted[0] if len(adapted) == 1 else tf.data.Dataset.zip(tuple(adapted))
 
     def _check_data_format(self, dataset, validation=False, predict=False):
         """Check if the dataset has the same number of IOs with the model."""

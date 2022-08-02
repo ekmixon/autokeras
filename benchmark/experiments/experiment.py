@@ -44,7 +44,7 @@ class Experiment(object):
     def run(self, repeat_times=1):
         total_times = []
         metric_values = []
-        for i in range(repeat_times):
+        for _ in range(repeat_times):
             total_time, metric = self.run_once()
             total_times.append(total_time)
             metric_values.append(metric)

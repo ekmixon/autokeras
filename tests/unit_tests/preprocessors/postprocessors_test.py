@@ -24,7 +24,7 @@ def test_sigmoid_postprocess_to_zero_one():
 
     y = postprocessor.postprocess(np.random.rand(10, 3))
 
-    assert set(y.flatten().tolist()) == set([1, 0])
+    assert set(y.flatten().tolist()) == {1, 0}
 
 
 def test_sigmoid_transform_dataset_doesnt_change():
@@ -48,7 +48,7 @@ def test_softmax_postprocess_to_zero_one():
 
     y = postprocessor.postprocess(np.random.rand(10, 3))
 
-    assert set(y.flatten().tolist()) == set([1, 0])
+    assert set(y.flatten().tolist()) == {1, 0}
 
 
 def test_softmax_transform_dataset_doesnt_change():

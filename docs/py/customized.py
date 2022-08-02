@@ -124,8 +124,7 @@ class SingleDenseLayerBlock(ak.Block):
         layer = tf.keras.layers.Dense(
             hp.Int("num_units", min_value=32, max_value=512, step=32)
         )
-        output_node = layer(input_node)
-        return output_node
+        return layer(input_node)
 
 
 """

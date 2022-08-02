@@ -161,7 +161,7 @@ class ImageClassifier(SupervisedImagePipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -170,7 +170,6 @@ class ImageClassifier(SupervisedImagePipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
 
 class ImageRegressor(SupervisedImagePipeline):
@@ -294,7 +293,7 @@ class ImageRegressor(SupervisedImagePipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -303,7 +302,6 @@ class ImageRegressor(SupervisedImagePipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
 
 class ImageSegmenter(SupervisedImagePipeline):
@@ -424,7 +422,7 @@ class ImageSegmenter(SupervisedImagePipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -433,7 +431,6 @@ class ImageSegmenter(SupervisedImagePipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
 
 class ImageObjectDetector(SupervisedImagePipeline):

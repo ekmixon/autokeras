@@ -22,7 +22,7 @@ from tensorflow.python.util import nest
 
 def validate_num_inputs(inputs, num):
     inputs = nest.flatten(inputs)
-    if not len(inputs) == num:
+    if len(inputs) != num:
         raise ValueError(
             "Expected {num} elements in the inputs list "
             "but received {len} inputs.".format(num=num, len=len(inputs))
@@ -31,8 +31,7 @@ def validate_num_inputs(inputs, num):
 
 def to_snake_case(name):
     intermediate = re.sub("(.)([A-Z][a-z0-9]+)", r"\1_\2", name)
-    insecure = re.sub("([a-z])([A-Z])", r"\1_\2", intermediate).lower()
-    return insecure
+    return re.sub("([a-z])([A-Z])", r"\1_\2", intermediate).lower()
 
 
 def check_tf_version() -> None:
@@ -60,7 +59,7 @@ def check_kt_version() -> None:
 
 
 def contain_instance(instance_list, instance_type):
-    return any([isinstance(instance, instance_type) for instance in instance_list])
+    return any(isinstance(instance, instance_type) for instance in instance_list)
 
 
 def evaluate_with_adaptive_batch_size(model, batch_size, verbose=1, **fit_kwargs):
@@ -115,9 +114,7 @@ def run_with_adaptive_batch_size(batch_size, func, **fit_kwargs):
 
 
 def get_hyperparameter(value, hp, dtype):
-    if value is None:
-        return hp
-    return value
+    return hp if value is None else value
 
 
 def add_to_hp(hp, hps, name=None):

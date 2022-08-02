@@ -87,7 +87,7 @@ def generate_text_data(num_instances=100):
     return np.array(
         [
             " ".join([vocab[j][np.random.randint(0, 5)] for j in range(4)])
-            for i in range(num_instances)
+            for _ in range(num_instances)
         ]
     )
 
@@ -121,7 +121,7 @@ def build_graph():
 
 def get_func_args(func):
     params = inspect.signature(func).parameters.keys()
-    return set(params) - set(["self", "args", "kwargs"])
+    return set(params) - {"self", "args", "kwargs"}
 
 
 def get_object_detection_data():

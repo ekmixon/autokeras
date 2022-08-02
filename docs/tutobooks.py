@@ -72,12 +72,9 @@ MAX_LOC = 300
 
 
 def nb_to_py(nb_path, py_path):
-    f = open(nb_path)
-    content = f.read()
-    f.close()
+    content = Path(nb_path).read_text()
     nb = json.loads(content)
-    py = '"""\n'
-    py += "Title: FILLME\n"
+    py = '"""\n' + "Title: FILLME\n"
     py += "Author: FILLME\n"
     py += "Date created: FILLME\n"
     py += "Last modified: FILLME\n"
@@ -98,26 +95,21 @@ def nb_to_py(nb_path, py_path):
             py += '"""\n'
             py += "".join(cell["source"]) + "\n"
             py += '"""\n\n'
-    # Save file
-    f = open(py_path, "w")
-    f.write(py)
-    f.close()
+    with open(py_path, "w") as f:
+        f.write(py)
     # Format file with Black
-    os.system("black " + py_path)
+    os.system(f"black {py_path}")
     # Shorten lines
     py = open(py_path).read()
     try:
         py = _shorten_lines(py)
     finally:
-        f = open(py_path, "w")
-        f.write(py)
-        f.close()
+        with open(py_path, "w") as f:
+            f.write(py)
 
 
 def py_to_nb(py_path, nb_path, fill_outputs=True):
-    f = open(py_path)
-    py = f.read()
-    f.close()
+    py = Path(py_path).read_text()
     # validate(py)
 
     # header, _, py, tag = _get_next_script_element(py)
@@ -152,7 +144,7 @@ def py_to_nb(py_path, nb_path, fill_outputs=True):
         if source and not source[-1].strip():
             source = source[:-1]
         if tag == "shell":
-            source = ["!" + line for line in source]
+            source = [f"!{line}" for line in source]
             cell_type = "code"
         if tag != "invisible" and source:
             cell = {"cell_type": cell_type, "source": source}
@@ -164,9 +156,7 @@ def py_to_nb(py_path, nb_path, fill_outputs=True):
             else:
                 cell["metadata"] = {"colab_type": "text"}
             cells.append(cell)
-    notebook = {}
-    for key in NB_BASE.keys():
-        notebook[key] = NB_BASE[key]
+    notebook = {key: NB_BASE[key] for key in NB_BASE.keys()}
     notebook["metadata"]["colab"]["name"] = str(py_path).split("/")[-1][:-3]
     notebook["cells"] = cells
     if loc > MAX_LOC:
@@ -174,9 +164,8 @@ def py_to_nb(py_path, nb_path, fill_outputs=True):
             "Found %d lines of code, but expected fewer than %d" % (loc, MAX_LOC)
         )
 
-    f = open(nb_path, "w")
-    f.write(json.dumps(notebook, indent=1, sort_keys=True))
-    f.close()
+    with open(nb_path, "w") as f:
+        f.write(json.dumps(notebook, indent=1, sort_keys=True))
     if fill_outputs:
         print("Generating ipynb")
         parent_dir = Path(nb_path).parent
@@ -208,8 +197,7 @@ def nb_to_md(nb_path, md_path, img_dir, working_dir=None):
     assert str(md_path).endswith(".md")
     current_dir = os.getcwd()
     original_img_dir = str(img_dir)
-    if original_img_dir.endswith("/"):
-        original_img_dir = original_img_dir[:-1]
+    original_img_dir = original_img_dir.removesuffix("/")
     img_dir = os.path.abspath(img_dir)
     nb_path = os.path.abspath(nb_path)
     nb_fname = str(nb_path).split("/")[-1]
@@ -217,7 +205,7 @@ def nb_to_md(nb_path, md_path, img_dir, working_dir=None):
     del_working_dir = False
     if working_dir is None:
         del_working_dir = True
-        working_dir = "tmp_" + str(random.randint(1e6, 1e7))
+        working_dir = f"tmp_{random.randint(1e6, 1e7)}"
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
     print("Using working_dir:", working_dir)
@@ -226,7 +214,7 @@ def nb_to_md(nb_path, md_path, img_dir, working_dir=None):
     shutil.copyfile(nb_path, nb_fname)
 
     md_name = str(md_path).split("/")[-1][:-3]
-    target_md = md_name + ".md"
+    target_md = f"{md_name}.md"
     img_dir = Path(img_dir) / md_name
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
@@ -240,7 +228,7 @@ def nb_to_md(nb_path, md_path, img_dir, working_dir=None):
         # + " --ExecutePreprocessor.timeout="
         # + str(TIMEOUT)
     )
-    tmp_img_dir = md_name + "_files"
+    tmp_img_dir = f"{md_name}_files"
     if os.path.exists(tmp_img_dir):
         for fname in os.listdir(tmp_img_dir):
             if fname.endswith(img_exts):
@@ -249,12 +237,13 @@ def nb_to_md(nb_path, md_path, img_dir, working_dir=None):
                 print("copy", src, "to", target)
                 shutil.copyfile(src, target)
     os.chdir(current_dir)
-    md_content = open(Path(working_dir) / (md_name + ".md")).read()
+    md_content = open(Path(working_dir) / f"{md_name}.md").read()
     for ext in img_exts:
         md_content = md_content.replace(
-            "![" + ext + "](" + md_name + "_files",
-            "![" + ext + "](" + original_img_dir + "/" + md_name,
+            f"![{ext}]({md_name}_files",
+            f"![{ext}]({original_img_dir}/{md_name}",
         )
+
     md_content = _make_output_code_blocks(md_content)
     open(md_path, "w").write(md_content)
     if del_working_dir:
@@ -289,9 +278,9 @@ def validate(py):
     description = lines[5][len("Description: ") :]
     if not description:
         raise ValueError("Missing `Description:` field content.")
-    if not description[0] == description[0].upper():
+    if description[0] != description[0].upper():
         raise ValueError("Description field content must be capitalized.")
-    if not description[-1] == ".":
+    if description[-1] != ".":
         raise ValueError("Description field content must end with a period.")
     if len(description) > 100:
         raise ValueError("Description field content must be less than 100 chars.")
@@ -307,15 +296,12 @@ def validate(py):
                 "Found trailing space on line %d; line: `%s`" % (i, line)
             )
     # Validate style with black
-    fpath = "/tmp/" + str(random.randint(1e6, 1e7)) + ".py"
-    f = open(fpath, "w")
-    pre_formatting = "\n".join(lines)
-    f.write(pre_formatting)
-    f.close()
-    os.system("black " + fpath)
-    f = open(fpath)
-    formatted = f.read()
-    f.close()
+    fpath = f"/tmp/{random.randint(1e6, 1e7)}.py"
+    with open(fpath, "w") as f:
+        pre_formatting = "\n".join(lines)
+        f.write(pre_formatting)
+    os.system(f"black {fpath}")
+    formatted = Path(fpath).read_text()
     os.remove(fpath)
     if formatted != pre_formatting:
         raise ValueError(
@@ -331,15 +317,13 @@ def _count_locs(lines):
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if not string_open:
-            if not line.startswith('"""'):
-                loc += 1
-            else:
-                if not line.endswith('"""'):
-                    string_open = True
-        else:
+        if string_open:
             if line.startswith('"""'):
                 string_open = False
+        elif not line.startswith('"""'):
+            loc += 1
+        elif not line.endswith('"""'):
+            string_open = True
     return loc
 
 
@@ -396,10 +380,7 @@ def _get_next_script_element(py):
         else:
             elines.append(line)
 
-    if etype == "markdown":
-        py = "\n".join(lines[i + 1 :])
-    else:
-        py = "\n".join(lines[i:])
+    py = "\n".join(lines[i + 1 :]) if etype == "markdown" else "\n".join(lines[i:])
     e = "\n".join(elines)
 
     return e, etype, py, tag
@@ -435,10 +416,11 @@ def _make_output_code_blocks(md):
     is_inside_backticks = False
 
     def is_output_line(line, prev_line, output_lines):
-        if line.startswith("    ") and len(line) >= 5:
-            if output_lines or (lines[i - 1].strip() == "" and line.strip()):
-                return True
-        return False
+        return bool(
+            line.startswith("    ")
+            and len(line) >= 5
+            and (output_lines or (lines[i - 1].strip() == "" and line.strip()))
+        )
 
     def flush(output_lines, final_lines):
         final_lines.append('<div class="k-default-codeblock">')

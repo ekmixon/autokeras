@@ -136,7 +136,7 @@ class BaseStructuredDataPipeline(auto_model.AutoModel):
 
         self.check_in_fit(x)
 
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -145,7 +145,6 @@ class BaseStructuredDataPipeline(auto_model.AutoModel):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
     def predict(self, x, **kwargs):
         """Predict the output for a given testing data.
@@ -323,7 +322,7 @@ class StructuredDataClassifier(SupervisedStructuredDataPipeline):
                 loss values and metrics values at successive epochs, as well as
                 validation loss values and validation metrics values (if applicable).
         """
-        history = super().fit(
+        return super().fit(
             x=x,
             y=y,
             epochs=epochs,
@@ -332,7 +331,6 @@ class StructuredDataClassifier(SupervisedStructuredDataPipeline):
             validation_data=validation_data,
             **kwargs
         )
-        return history
 
 
 class StructuredDataRegressor(SupervisedStructuredDataPipeline):

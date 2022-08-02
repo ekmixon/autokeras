@@ -212,6 +212,4 @@ class Pipeline(pps_module.Preprocessor):
                 if isinstance(preprocessor, pps_module.TargetPreprocessor):
                     data = preprocessor.postprocess(data)
             outputs.append(data)
-        if len(outputs) == 1:
-            return outputs[0]
-        return outputs
+        return outputs[0] if len(outputs) == 1 else outputs

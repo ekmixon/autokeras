@@ -111,11 +111,9 @@ def test_clf_head_hpps_with_uint8_contain_cast_to_int32():
     head.config_from_analyser(analyser)
 
     assert any(
-        [
-            isinstance(hpp, hyper_preprocessors.DefaultHyperPreprocessor)
-            and isinstance(hpp.preprocessor, preprocessors.CastToInt32)
-            for hpp in head.get_hyper_preprocessors()
-        ]
+        isinstance(hpp, hyper_preprocessors.DefaultHyperPreprocessor)
+        and isinstance(hpp.preprocessor, preprocessors.CastToInt32)
+        for hpp in head.get_hyper_preprocessors()
     )
 
 

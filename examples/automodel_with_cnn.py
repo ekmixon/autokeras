@@ -9,10 +9,10 @@ num_instances = 100
 num_features = 5
 x_train = np.random.rand(num_instances, num_features).astype(np.float32)
 y_train = np.zeros(num_instances).astype(np.float32)
-y_train[0 : int(num_instances / 2)] = 1
+y_train[:num_instances // 2] = 1
 x_test = np.random.rand(num_instances, num_features).astype(np.float32)
 y_test = np.zeros(num_instances).astype(np.float32)
-y_train[0 : int(num_instances / 2)] = 1
+y_train[:num_instances // 2] = 1
 
 x_train = np.expand_dims(
     x_train, axis=2

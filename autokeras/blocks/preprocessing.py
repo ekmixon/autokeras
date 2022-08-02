@@ -87,12 +87,11 @@ class TextToIntSequence(block_module.Block):
             output_sequence_length = hp.Choice(
                 "output_sequence_length", [64, 128, 256, 512], default=64
             )
-        output_node = preprocessing.TextVectorization(
+        return preprocessing.TextVectorization(
             max_tokens=self.max_tokens,
             output_mode="int",
             output_sequence_length=output_sequence_length,
         )(input_node)
-        return output_node
 
 
 class TextToNgramVector(block_module.Block):
@@ -183,9 +182,7 @@ class ImageAugmentation(block_module.Block):
 
     @staticmethod
     def _get_fraction_value(value):
-        if isinstance(value, tuple):
-            return value
-        return value, value
+        return value if isinstance(value, tuple) else (value, value)
 
     def build(self, hp, inputs=None):
         input_node = nest.flatten(inputs)[0]
@@ -214,9 +211,9 @@ class ImageAugmentation(block_module.Block):
             flip_mode = ""
         elif horizontal_flip and vertical_flip:
             flip_mode = "horizontal_and_vertical"
-        elif horizontal_flip and not vertical_flip:
+        elif horizontal_flip:
             flip_mode = "horizontal"
-        elif not horizontal_flip and vertical_flip:
+        else:
             flip_mode = "vertical"
         if flip_mode != "":
             output_node = preprocessing.RandomFlip(mode=flip_mode)(output_node)
